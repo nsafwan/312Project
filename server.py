@@ -4,14 +4,30 @@ from pymongo import MongoClient
 
 mongo_client = MongoClient("localhost") #This should be changed to mongo for docker
 db = mongo_client["cse312"] #Creating a mongo database called cse312
-post_collection = db["posts"] #Collection of all the posts should be in the format (username, title, description). Username is entered by us through auth.
-user_collection = db["users"] #Collection of all the users. Should be in the format (username, shpassword, auth)
 
 
-post_collection.insert_one({"username": "Test User", "title": "Test Title", "description": "Test description"})
-all_posts = post_collection.find({})
-array = list(all_posts)
-print(array)
+"""
+Collection of all the users
+Format: (username, shpassword, auth, liked)
+shpassword is the salted hashed password of the user.
+auth is the hased auth token of the user.
+liked is an array of all the postnumber that the user has liked (starts off with an empty array).
+"""
+user_collection = db["users"]
+
+
+"""
+Collection of all the posts.
+Format: (username, title, description, likes, postnumber)
+You can assume each post has a unique postnumber.
+Likes attribute stores the total number of likes this post has.
+"""
+post_collection = db["posts"]
+
+
+
+post_collection.insert_one({"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
+user_collection.insert_one({"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
 
 
 
