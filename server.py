@@ -26,7 +26,6 @@ Likes attribute stores the total number of likes this post has.
 post_collection = db["posts"]
 
 
-
 post_collection.insert_one({"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
 user_collection.insert_one({"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
 
