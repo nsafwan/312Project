@@ -16,6 +16,7 @@ liked is an array of all the postnumber that the user has liked (starts off with
 user_collection = db["users"]
 
 
+
 """
 Collection of all the posts.
 Format: (username, title, description, likes, postnumber)
