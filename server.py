@@ -1,4 +1,9 @@
 from flask import Flask, send_from_directory, request, make_response
+from pymongo import MongoClient
+
+mongo_client = MongoClient("localhost")
+db = mongo_client["cse312"]
+chat_collection = db["chat"]
 
 app = Flask(__name__)
 
