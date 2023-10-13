@@ -2,6 +2,7 @@ from flask import Flask, send_from_directory, request, make_response
 from pymongo import MongoClient
 import bcrypt
 from uuid import uuid4  # used to generate auth token
+from hashlib import sha256
 
 mongo_client = MongoClient("localhost")  # This should be changed to mongo for docker
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
@@ -83,7 +84,7 @@ def register():
     if existing_user:
         return "Username Taken", 400
     else:
-        user_collection.insert_one({"username": username, "shpassword": shpassword})
+        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "liked": []})
         return "New User Registered"
 
 @app.route("/login", methods=["POST"])
@@ -96,7 +97,7 @@ def login():
     if existing_user and bcrypt.checkpw(data["password_login"].encode(), existing_user["shpassword"]):
         auth = str(uuid4())  # generate auth token
         response.set_cookie('auth_token', auth, httponly=True, max_age=3600)  # set cookie of un-hashed auth token
-        auth = bcrypt.hashpw(auth.encode(), bcrypt.gensalt())  # hash byte string of auth token
+        auth = sha256(auth.encode()).hexdigest()  # hash byte string of auth token (.hexdigest() converts the hash object to a readable string of characters)
         auth = {"$set": {"auth": auth}}  # create new dict element to add to database entry
         user_collection.update_one({"username": username}, auth)  # add auth token to user entry
         return response
