@@ -112,25 +112,29 @@ def apply_nosniff(response):
 @app.route("/like/<int:postnumber>", methods=["POST"])
 def like_post(postnumber):
     # Check user authentication
-    auth_token_name = "auth-token"
+    auth_token_name = "auth_token"
     if auth_token_name in request.cookies:
         request_auth_token = request.cookies.get(auth_token_name)
-        hashed_request_auth_token = request_auth_token
+        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
             username = user["username"]
             post = post_collection.find_one({"postnumber": postnumber})
             if post:
-                liked_by = post.get("liked_by", [])
-                if username in liked_by:
+                liked_post = user.get("liked", [])
+                if postnumber in liked_post:
                     # User has already liked the post, so unlike it
-                    liked_by.remove(username)
-                    post_collection.update_one({"postnumber": postnumber}, {"$set": {"likes": post["likes"] - 1}})
+                    liked_post.remove(postnumber)
+                    # Updates with the postnumber of the unliked post
+                    user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
+                    post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": -1}})
                     return "unliked", 200
                 else:
                     # Like the post
-                    liked_by.append(username)
-                    post_collection.update_one({"postnumber": postnumber}, {"$set": {"likes": post["likes"] + 1}})
+                    liked_post.append(postnumber)
+                    # Updates with the postnumber of the liked post
+                    user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
+                    post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": 1}})
                     return "liked", 200
                 
     # User not authenticated or post not found
