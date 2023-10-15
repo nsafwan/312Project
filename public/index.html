@@ -1,24 +1,43 @@
-
 <html>
 <head>
-    <title>CSE312 Project Part 1</title>
+    <title>CSE312 Project App</title>
     <link rel="stylesheet" type="text/css" href="public/style.css"/>
 </head>
-<body onload="welcome();">
 
-<h1>CSE312 Project Part 1</h1>
-
-<p id="paragraph">
-    This text is from the HTML file 🙂
-</p>
-
-<img src="/public/image/kitten.jpg" alt="It's a kitten" class="my_image"/>
+<body>
+<div class="title">
+    <h1>Login and Registration Page</h1>
+</div>
 
 
-<br/>
-<hr/>
+    <div class="allForms">
+        <h2>Register:</h2>
+        <form class="form" action="/register" method="post" enctype="application/x-www-form-urlencoded">
+            <label>Username:
+                <input id="reg-form-username" type="text" name="username_reg"/>
+            </label>
+            <br/>
+            <label>Password:&nbsp;
+                <input id="reg-form-pass" type="password" name="password_reg">
+            </label>
+            <input type="submit" value="Register">
+        </form>
 
+        <h2>Login:</h2>
+        <form class="form" action="/login" method="post" enctype="application/x-www-form-urlencoded">
+            <label>Username:
+                <input id="login-form-username" type="text" name="username_login"/>
+            </label>
+            <br/>
+            <label>Password:&nbsp;
+                <input id="login-form-pass" type="password" name="password_login">
+            </label>
+            <input type="submit" value="Login">
+        </form>
+    </div>
 
-<script src="/public/functions.js"></script>
+    <button id="toPosts">Go to Posts</button>
+</div>
+<script src="public/functions.js"></script>
 </body>
 </html>

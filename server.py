@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import bcrypt
 from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
+import json
 
 mongo_client = MongoClient("localhost")  # This should be changed to mongo for docker
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
@@ -36,16 +37,32 @@ app = Flask(__name__)
 def serve_index():
     return send_from_directory('public', 'index.html')
 
+@app.route('/posts')
+def serve_posts():
+    return send_from_directory('public', 'posts.html')
+
 
 @app.route('/public/<path:resource>')
 def serve_file(resource):
     return send_from_directory('public', resource)
 
+@app.route("/post-history")
+def give_history():
+    all_posts = list(post_collection.find({}))
+    for eachpost in all_posts:
+        #deleting the extraneous _id attribute.
+        del eachpost['_id']
+    all_posts = json.dumps(all_posts).encode()
+    return all_posts
+
+
+
 
 @app.route("/submit-post", methods=["POST"])
 def submit_post():
     # get title and description of post
-    post_data = request.get_json()
+    post_data = request.data.decode()
+    post_data = json.loads(post_data)
     title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 

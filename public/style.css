@@ -1,9 +1,40 @@
 
 body {
-    background-color: #232323;
+    background-color: dimgrey;
     color: white;
 }
 
-.my_image {
-    width: 120px;
+#toPosts {
+    width: 200px;
+    height: 50px;
+    font-size: 18px;
 }
+
+#all_posts{
+    height: 80%;
+    overflow: scroll;
+}
+
+.post-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap:10px;
+}
+
+#title-box {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+#desc-box{
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+
+}
+
