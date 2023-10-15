@@ -25,10 +25,15 @@ Likes attribute stores the total number of likes this post has.
 """
 post_collection = db["posts"]
 
-post_collection.insert_one(
-    {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
-user_collection.insert_one(
-    {"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
+"""
+Only ever has a single value called unique_id
+"""
+ids = db["ids"]
+
+# post_collection.insert_one(
+#     {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
+# user_collection.insert_one(
+#     {"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
 
 app = Flask(__name__)
 
@@ -66,6 +71,17 @@ def submit_post():
     title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+    id_list = list(ids.find({}))
+    if not id_list:
+        #if this is the first entry:
+        ids.insert_one({"unique_id": 2})
+        postnumber = 1
+    else:
+        #getting unique_id in db-> deleting all entries-> inserting the prevous unique_id +1
+        postnumber = id_list[0].get("unique_id")
+        ids.delete_many({})
+        ids.insert_one({"unique_id": id + 1})
+
     # Check to see if user is authenticated
     # search for auth token cookie
     auth_token_cookie_name = "auth-token"
@@ -76,8 +92,6 @@ def submit_post():
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
             username = user["username"]
-            # pstnumber needs to be calculated
-            postnumber = 2
             post_collection.insert_one({
                 "username": username,
                 "title": title,
