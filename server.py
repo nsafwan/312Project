@@ -26,9 +26,9 @@ Likes attribute stores the total number of likes this post has.
 post_collection = db["posts"]
 
 """
-Only ever has a single value called unique_id
+Only ever has a single value called unique_postnumber
 """
-ids = db["ids"]
+postnumbers_collection = db["postnumbers"]
 
 # post_collection.insert_one(
 #     {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
@@ -62,7 +62,6 @@ def give_history():
 
 
 
-
 @app.route("/submit-post", methods=["POST"])
 def submit_post():
     # get title and description of post
@@ -70,25 +69,26 @@ def submit_post():
     post_data = json.loads(post_data)
     title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # print(post_data)
 
-    id_list = list(ids.find({}))
-    if not id_list:
+    postnumbers_list = list(postnumbers_collection.find({}))
+    if not postnumbers_list:
         #if this is the first entry:
-        ids.insert_one({"unique_id": 2})
+        postnumbers_collection.insert_one({"unique_postnumber": 2})
         postnumber = 1
     else:
-        #getting unique_id in db-> deleting all entries-> inserting the prevous unique_id +1
-        postnumber = id_list[0].get("unique_id")
-        ids.delete_many({})
-        ids.insert_one({"unique_id": id + 1})
+        #getting unique_postnumber in db-> deleting all entries-> inserting the prevous unique_postnumber +1
+        postnumber = postnumbers_list[0].get("unique_postnumber")
+        postnumbers_collection.delete_many({})
+        postnumbers_collection.insert_one({"unique_postnumber": postnumber + 1})
 
     # Check to see if user is authenticated
     # search for auth token cookie
-    auth_token_cookie_name = "auth-token"
+    auth_token_cookie_name = "auth_token"
     if auth_token_cookie_name in request.cookies:
         request_auth_token = request.cookies.get(auth_token_cookie_name)
         # hashed_request_auth_token needs to be calculated
-        hashed_request_auth_token = request_auth_token
+        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
             username = user["username"]
@@ -103,6 +103,7 @@ def submit_post():
 
     # User not authenticated. Post not submitted. Status code 401
     return "Unauthenticated", 401
+
 
 
 @app.route("/register", methods=["POST"])
