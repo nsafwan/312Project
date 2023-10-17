@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, make_response
+from flask import Flask, send_from_directory, request, redirect, url_for
 from pymongo import MongoClient
 import bcrypt
 from uuid import uuid4  # used to generate auth token
@@ -114,14 +114,16 @@ def register():
     shpassword = bcrypt.hashpw(data["password_reg"].encode(), bcrypt.gensalt())
     existing_user = user_collection.find_one({"username": username})
     if existing_user:
-        return "Username Taken", 400
+        print("Username Taken")
+        return redirect(url_for('serve_index'))
     else:
         user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "liked": []})
-        return "New User Registered"
+        print("New User Registered")
+        return redirect(url_for('serve_index'))
 
 @app.route("/login", methods=["POST"])
 def login():
-    response = make_response("User Logged In")
+    response = redirect(url_for('serve_index'))
     data = request.form
     # assuming same form input names as hw2 html (username_login and password_login)
     username = data["username_login"]
@@ -132,9 +134,11 @@ def login():
         auth = sha256(auth.encode()).hexdigest()  # hash byte string of auth token (.hexdigest() converts the hash object to a readable string of characters)
         auth = {"$set": {"auth": auth}}  # create new dict element to add to database entry
         user_collection.update_one({"username": username}, auth)  # add auth token to user entry
+        print("User Logged In")
         return response
     else:
-        return "Incorrect Username or Password", 400
+        print("Incorrect Username or Password")
+        return redirect(url_for('serve_index'))
 
 @app.after_request
 def apply_nosniff(response):
