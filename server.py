@@ -91,7 +91,7 @@ def submit_post():
         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
-            username = user["username"]
+            username = user["username"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") #.replaces added to escape html characters on display
             post_collection.insert_one({
                 "username": username,
                 "title": title,
