@@ -2,6 +2,7 @@
 body {
     background-color: dimgrey;
     color: white;
+    font-family: "Arial", sans-serif;
 }
 
 #toPosts {
@@ -11,7 +12,7 @@ body {
 }
 
 #all_posts{
-    height: 60%;
+    height: 70%;
     overflow: scroll;
 }
 
@@ -35,6 +36,7 @@ body {
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
+    font-family: "Arial", sans-serif;
 
 }
 

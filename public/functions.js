@@ -8,9 +8,12 @@ document.getElementById("toPosts").addEventListener("click", function(){
 function postHTML(postJSON){
     const username = postJSON.username;
     const title =postJSON.title;
-    const description = postJSON.desc;
+    const description = postJSON.description;
     const postnumber = postJSON.postnumber;
-    let thisPostHTML = "<br><id =post"
+    const likes = postJSON.likes;
+    let thisPostHTML = "<span id='post_" + postnumber +"'><b>User: " + username+"<br>Title: " + title+ "</b><br>" +description+"<br>";
+    thisPostHTML += "<button onclick='likePost(\"" +postnumber + "\")'>Like</button><br>" +likes+"<hr>";
+    return thisPostHTML;
 
 }
 
@@ -58,7 +61,6 @@ function sendPost(){
     const postJSON= {"title": title, "description": desc};
     request.open("POST", "/submit-post");
     request.send(JSON.stringify(postJSON));
-    titlebox.focus();
 
 }
 
@@ -78,7 +80,6 @@ function updatePosts(){
 }
 
 function startup(){
-    document.getElementById("title-box").focus();
     updatePosts();
     setInterval(updatePosts, 2000);
 }
