@@ -92,6 +92,19 @@ function username(){
     request.send()
 }
 
+function username(){
+    const request = new XMLHttpRequest();
+    request.open("GET", "/user-display");
+    request.onreadystatechange = function() {
+        if (this.readyState === 4 && this.status === 200) {
+            const res = JSON.parse(this.response);
+            var usernameDiv = document.getElementById("user");
+            usernameDiv.innerHTML = res;
+        }
+    }
+    request.send();
+}
+
 function startup(){
     updatePosts();
     setInterval(updatePosts, 2000);

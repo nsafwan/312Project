@@ -140,16 +140,21 @@ def login():
         print("Incorrect Username or Password")
         return redirect(url_for('serve_index'))
 
-@app.route("/user-display", methods=["GET"])
+
+@app.route("/user-display", methods= ["GET"])
 def serve_user():
     auth_token_name = "auth_token"
-    fail_msg = "User is Not Logged In"
+    send_message = "User Not Logged In"
     if auth_token_name in request.cookies:
         request_auth_token = request.cookies.get(auth_token_name)
-        hashed_req_auth_token = sha256(request_auth_token.encode()).hexdigest()
-        user = user_collection.find_one({"auth": hashed_req_auth_token})
-    if user:
-        send_message = "Username: " + user["username"]
+        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_request_auth_token})
+        if user:
+            send_message = "Username: " + user["username"]
+
+    send_message = json.dumps(send_message).encode()
+    return send_message
+
 
 @app.after_request
 def apply_nosniff(response):
