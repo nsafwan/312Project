@@ -5,7 +5,7 @@ from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
 
-mongo_client = MongoClient("mongo")  # This should be changed to mongo for docker
+mongo_client = MongoClient("localhost")  # This should be changed to mongo for docker
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 """
@@ -139,6 +139,17 @@ def login():
     else:
         print("Incorrect Username or Password")
         return redirect(url_for('serve_index'))
+
+@app.route("/user-display", methods=["GET"])
+def serve_user():
+    auth_token_name = "auth_token"
+    fail_msg = "User is Not Logged In"
+    if auth_token_name in request.cookies:
+        request_auth_token = request.cookies.get(auth_token_name)
+        hashed_req_auth_token = sha256(request_auth_token.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_req_auth_token})
+    if user:
+        send_message = "Username: " + user["username"]
 
 @app.after_request
 def apply_nosniff(response):
