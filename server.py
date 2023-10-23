@@ -5,7 +5,7 @@ from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
 
-mongo_client = MongoClient("mongo")  # This should be changed to mongo for docker
+mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 """
@@ -91,7 +91,7 @@ def submit_post():
         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
-            username = user["username"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") #.replaces added to escape html characters on display
+            username = user["username"]
             post_collection.insert_one({
                 "username": username,
                 "title": title,
@@ -110,7 +110,7 @@ def submit_post():
 def register():
     data = request.form
     # assuming same form input names as hw2 html (username_reg and password_reg)
-    username = data["username_reg"]
+    username = data["username_reg"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") #escaped when entered to db
     shpassword = bcrypt.hashpw(data["password_reg"].encode(), bcrypt.gensalt())
     existing_user = user_collection.find_one({"username": username})
     if existing_user:
@@ -126,7 +126,7 @@ def login():
     response = redirect(url_for('serve_index'))
     data = request.form
     # assuming same form input names as hw2 html (username_login and password_login)
-    username = data["username_login"]
+    username = data["username_login"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") #escaped in db
     existing_user = user_collection.find_one({"username": username})
     if existing_user and bcrypt.checkpw(data["password_login"].encode(), existing_user["shpassword"]):
         auth = str(uuid4())  # generate auth token
