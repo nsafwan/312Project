@@ -5,7 +5,7 @@ from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
 
-mongo_client = MongoClient("localhost")  # This should be changed to mongo for docker
+mongo_client = MongoClient("mongo")  # This should be changed to mongo for docker
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 """
