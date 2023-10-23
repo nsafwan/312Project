@@ -84,11 +84,12 @@ function username(){
     request.open("GET", "/user-display");
     request.onreadystatechange = function(){
       if (this.readyState === 4 && this.status === 200) {
-          var response = request.response
+          const res = JSON.parse(this.response)
+          var usernameDiv = document.getElementById("user");
+          usernameDiv.innerHTML = res;
       }
-        }
-        var usernameDiv = document.getElementById("user");
-        usernameDiv.innerHTML = response;
+    }
+    request.send()
 }
 
 function startup(){
