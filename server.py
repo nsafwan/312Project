@@ -5,7 +5,7 @@ from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
 
-mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
+mongo_client = MongoClient("localhost")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 """
@@ -15,7 +15,7 @@ shpassword is the salted hashed password of the user.
 auth is the hased auth token of the user.
 liked is an array of all the postnumber that the user has liked (starts off with an empty array).
 """
-user_collection = db["users"]
+#user_collection = db["users"]
 
 """
 Collection of all the posts.
@@ -23,18 +23,50 @@ Format: (username, title, description, likes, postnumber)
 You can assume each post has a unique postnumber.
 Likes attribute stores the total number of likes this post has.
 """
-post_collection = db["posts"]
+#post_collection = db["posts"]
 
 """
 Only ever has a single value called unique_postnumber
 """
-postnumbers_collection = db["postnumbers"]
+#postnumbers_collection = db["postnumbers"]
 
 # post_collection.insert_one(
 #     {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
 # user_collection.insert_one(
 #     {"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
 
+
+user_collection = db["users"]
+question_collection = db["questions"]
+answer_collection = db["answers"]
+# question_collection.insert_one(
+#     {
+#     "username": "Asker's Username",
+#     "title": "Question Title",
+#     "description": "Question Content",
+#     "image": "name of associated image",
+#     "answers": ["Red", "53", "Left", "1040"],
+#     "correctAnswer": 0,
+#     "grades": [],
+#     "questionID": 1
+#     })
+
+# answer_collection.insert_one(
+#     {
+#     "username": "Responders Username",
+#     "questionID": 1,
+#     "answer": 0
+#     })
+
+# user_collection.insert_one(
+#     {
+#     "username": "username",
+#     "shpassword": "salted hashed password",
+#     "auth": "Test salted auth",
+#     "AnsweredQuestionsIDs": [1, 34, 325],
+#     "answers": [3, 0, 1],
+#     "grades": [1, 1, 0]
+#     })
 app = Flask(__name__)
 
 
