@@ -15,7 +15,7 @@ shpassword is the salted hashed password of the user.
 auth is the hased auth token of the user.
 liked is an array of all the postnumber that the user has liked (starts off with an empty array).
 """
-#user_collection = db["users"]
+# user_collection = db["users"]
 
 """
 Collection of all the posts.
@@ -23,12 +23,11 @@ Format: (username, title, description, likes, postnumber)
 You can assume each post has a unique postnumber.
 Likes attribute stores the total number of likes this post has.
 """
-#post_collection = db["posts"]
+# post_collection = db["posts"]
 
 """
 Only ever has a single value called unique_postnumber
 """
-#postnumbers_collection = db["postnumbers"]
 
 # post_collection.insert_one(
 #     {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
@@ -39,6 +38,9 @@ Only ever has a single value called unique_postnumber
 user_collection = db["users"]
 question_collection = db["questions"]
 answer_collection = db["answers"]
+postnumbers_collection = db["postnumbers"]
+# postnumbers_collection is used to store questionId
+
 # question_collection.insert_one(
 #     {
 #     "username": "Asker's Username",
@@ -85,24 +87,25 @@ def serve_file(resource):
 
 @app.route("/post-history")
 def give_history():
-    all_posts = list(post_collection.find({}))
+    all_posts = list(question_collection.find({}))
     for eachpost in all_posts:
         #deleting the extraneous _id attribute.
         del eachpost['_id']
     all_posts = json.dumps(all_posts).encode()
     return all_posts
 
-
-
 @app.route("/submit-post", methods=["POST"])
-def submit_post():
-    # get title and description of post
-    post_data = request.data.decode()
-    post_data = json.loads(post_data)
-    title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    # print(post_data)
+def submit_question():
+    # get data
+    title = request.form.get("title").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    description = request.form.get("description").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    answer1 = request.form.get("answer1").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    answer2 = request.form.get("answer2").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    answer3 = request.form.get("answer3").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    answer4 = request.form.get("answer4").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    correct_answer = int(request.form.get("correct_answer").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")) - 1
 
+    # assign id for question
     postnumbers_list = list(postnumbers_collection.find({}))
     if not postnumbers_list:
         #if this is the first entry:
@@ -119,22 +122,69 @@ def submit_post():
     auth_token_cookie_name = "auth_token"
     if auth_token_cookie_name in request.cookies:
         request_auth_token = request.cookies.get(auth_token_cookie_name)
-        # hashed_request_auth_token needs to be calculated
         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
             username = user["username"]
-            post_collection.insert_one({
-                "username": username,
-                "title": title,
-                "description": description,
-                "likes": 0,
-                "postnumber": postnumber
-            })
-            return "Successfully posted"
+            question_collection.insert_one(
+                {
+                    "username": username,
+                    "title": title,
+                    "description": description,
+                    "image": "name of associated image",
+                    "answers": [answer1, answer2, answer3, answer4],
+                    "correctAnswer": correct_answer,
+                    "grades": [],
+                    "questionID": postnumber
+                })
+            return "Successfully posted question"
 
     # User not authenticated. Post not submitted. Status code 401
     return "Unauthenticated", 401
+
+
+# Old code from Part 2
+# @app.route("/submit-post", methods=["POST"])
+# def submit_post():
+#     # get title and description of post
+#     post_data = request.data.decode()
+#     post_data = json.loads(post_data)
+#     title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+#     description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+#     # print(post_data)
+#
+#     postnumbers_list = list(postnumbers_collection.find({}))
+#     if not postnumbers_list:
+#         #if this is the first entry:
+#         postnumbers_collection.insert_one({"unique_postnumber": 2})
+#         postnumber = 1
+#     else:
+#         #getting unique_postnumber in db-> deleting all entries-> inserting the prevous unique_postnumber +1
+#         postnumber = postnumbers_list[0].get("unique_postnumber")
+#         postnumbers_collection.delete_many({})
+#         postnumbers_collection.insert_one({"unique_postnumber": postnumber + 1})
+#
+#     # Check to see if user is authenticated
+#     # search for auth token cookie
+#     auth_token_cookie_name = "auth_token"
+#     if auth_token_cookie_name in request.cookies:
+#         request_auth_token = request.cookies.get(auth_token_cookie_name)
+#         # hashed_request_auth_token needs to be calculated
+#         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
+#         user = user_collection.find_one({"auth": hashed_request_auth_token})
+#         if user:
+#             username = user["username"]
+#             post_collection.insert_one({
+#                 "username": username,
+#                 "title": title,
+#                 "description": description,
+#                 "likes": 0,
+#                 "postnumber": postnumber
+#             })
+#             return "Successfully posted"
+#
+#     # User not authenticated. Post not submitted. Status code 401
+#     return "Unauthenticated", 401
 
 
 

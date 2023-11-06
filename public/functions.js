@@ -9,24 +9,40 @@ function postHTML(postJSON){
     const username = postJSON.username;
     const title =postJSON.title;
     const description = postJSON.description;
-    const postnumber = postJSON.postnumber;
-    const likes = postJSON.likes;
-    let thisPostHTML = "<span id='post_" + postnumber +"'><b>User: " + username+"<br>Title: " + title+ "</b><br>" +description+"<br>";
-    thisPostHTML += "<button onclick='likePost(\"" +postnumber + "\")'>Like</button><br>" +likes+"<hr>";
+    const postnumber = postJSON["questionId"];
+    const answers = postJSON["answers"];
+    // const likes = postJSON["likes"];
+
+    let thisPostHTML = "<span id='post_" + postnumber +"'><b>User: " + username+"<br>Title: " + title+ "</b><br>Description: " +description+"</span><br>";
+    // form w/ radio buttons
+    thisPostHTML += "<form>Choose your answer:<br>"
+    // radio 1
+    thisPostHTML += "<input type='radio' id='answer1_' name='answer' value=1>";
+    thisPostHTML += "<label for='answer1_'>" + answers[0] + "</label><br>"
+    // radio 2
+    thisPostHTML += "<input type='radio' id='answer2_' name='answer' value=2>";
+    thisPostHTML += "<label for='answer2_'>" + answers[1] + "</label><br>"
+    // radio 3
+    thisPostHTML += "<input type='radio' id='answer3_' name='answer' value=3>";
+    thisPostHTML += "<label for='answer3_'>" + answers[2] + "</label><br>"
+    // radio 4
+    thisPostHTML += "<input type='radio' id='answer4_' name='answer' value=4>";
+    thisPostHTML += "<label for='answer4_'>" + answers[3] + "</label><br>"
+    thisPostHTML += "</form><hr>";
+
     return thisPostHTML;
-
 }
 
-function likePost(postnumber) {
-    const request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (this.readyState === 4 && this.status === 200) {
-            console.log(this.response);
-        }
-    }
-    request.open("POST", "/like/" + postnumber);
-    request.send();
-}
+// function likePost(postnumber) {
+//     const request = new XMLHttpRequest();
+//     request.onreadystatechange = function () {
+//         if (this.readyState === 4 && this.status === 200) {
+//             console.log(this.response);
+//         }
+//     }
+//     request.open("POST", "/like/" + postnumber);
+//     request.send();
+// }
 
 
 //This just clears all the posts before reload.
@@ -43,7 +59,7 @@ function addPosts(postJSON){
     posts.scrollTop = posts.scrollHeight - posts.clientHeight;
 }
 
-//Whatever the user puts into the title and desc box is sent to the server.
+// Whatever the user puts into the title and desc box is sent to the server.
 function sendPost(){
     const titlebox = document.getElementById("title-box");
     const title = titlebox.value;
