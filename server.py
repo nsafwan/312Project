@@ -76,9 +76,15 @@ app = Flask(__name__)
 def serve_index():
     return send_from_directory('public', 'index.html')
 
+
 @app.route('/posts')
 def serve_posts():
     return send_from_directory('public', 'posts.html')
+
+
+@app.route('/public/image/<image_name>')
+def serve_image(image_name):
+    return send_from_directory('public/image', image_name)
 
 
 @app.route('/public/<path:resource>')
@@ -96,7 +102,7 @@ def give_history():
 
 @app.route("/submit-post", methods=["POST"])
 def submit_question():
-    # get data
+    # get form fields
     title = request.form.get("title").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     description = request.form.get("description").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     answer1 = request.form.get("answer1").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -117,6 +123,14 @@ def submit_question():
         postnumbers_collection.delete_many({})
         postnumbers_collection.insert_one({"unique_postnumber": postnumber + 1})
 
+    # get uploaded image
+    image, image_name = None, None
+    if "image" in request.files:
+        image = request.files["image"]
+        if image:
+            image_name_from_user = image.filename.replace("/", "")
+            image_name = "postnumber_" + str(postnumber) + "_image_" + image_name_from_user
+
     # Check to see if user is authenticated
     # search for auth token cookie
     auth_token_cookie_name = "auth_token"
@@ -131,13 +145,16 @@ def submit_question():
                     "username": username,
                     "title": title,
                     "description": description,
-                    "image": "name of associated image",
+                    "image": image_name,
                     "answers": [answer1, answer2, answer3, answer4],
                     "correctAnswer": correct_answer,
                     "grades": [],
                     "questionID": postnumber
                 })
-            return "Successfully posted question"
+            # save image in directory: public/image
+            if image:
+                image.save("public/image/" + image_name)
+            return redirect(url_for('serve_posts'))
 
     # User not authenticated. Post not submitted. Status code 401
     return "Unauthenticated", 401

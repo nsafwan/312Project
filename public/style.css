@@ -5,6 +5,10 @@ body {
     font-family: "Arial", sans-serif;
 }
 
+img {
+    max-width: 100px;
+}
+
 #toPosts {
     width: 200px;
     height: 50px;
@@ -12,7 +16,7 @@ body {
 }
 
 #all_posts{
-    height: 70%;
+    height: 60%;
     overflow: scroll;
 }
 

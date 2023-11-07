@@ -11,9 +11,17 @@ function postHTML(postJSON){
     const description = postJSON.description;
     const postnumber = postJSON["questionId"];
     const answers = postJSON["answers"];
+    const image = postJSON["image"]
     // const likes = postJSON["likes"];
 
-    let thisPostHTML = "<span id='post_" + postnumber +"'><b>User: " + username+"<br>Title: " + title+ "</b><br>Description: " +description+"</span><br>";
+    let thisPostHTML = "";
+
+    // image
+    if (image) {
+        thisPostHTML += "<img src=public/image/" + image + "></img><br>"
+    }
+
+    thisPostHTML += "<span id='post_" + postnumber +"'><b>User: " + username+"<br>Title: " + title+ "</b><br>Description: " +description+"</span><br>";
     // form w/ radio buttons
     thisPostHTML += "<form>Choose your answer:<br>"
     // radio 1
