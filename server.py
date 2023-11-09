@@ -1,4 +1,5 @@
-from flask import Flask, send_from_directory, request, redirect, url_for
+from flask import Flask, send_from_directory, request, redirect, url_for, render_template
+from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
 import bcrypt
 from uuid import uuid4  # used to generate auth token
@@ -71,6 +72,8 @@ postnumbers_collection = db["postnumbers"]
 #     })
 app = Flask(__name__)
 
+socketio = SocketIO(app)
+clients = {}
 
 @app.route('/')
 def serve_index():
@@ -238,7 +241,7 @@ def login():
     else:
         print("Incorrect Username or Password")
         return redirect(url_for('serve_index'))
-
+    
 
 @app.route("/user-display", methods= ["GET"])
 def serve_user():
@@ -253,6 +256,38 @@ def serve_user():
 
     send_message = json.dumps(send_message).encode()
     return send_message
+
+
+# Handles connections
+@socketio.on('connect')
+def connect():
+    print("Client connected")
+
+# Handles disconnections
+@socketio.on('disconnect')
+def disconnect():
+    print("Client disconnected")
+
+# Process submitted answers by the user
+@socketio.on('submit_answer')
+def submit_answer(data):
+    username = data['username']
+    answer = data['answer']
+    
+    # Logic to verify the answer. Check if the user has already answered and if the time limit has not expired
+    print(f"User {username} answered: {answer}")
+
+# Broadcast question details and start the countdown
+@socketio.on('start_question')
+def start_question(data):
+    emit('question', json.dumps(data), broadcast=True)
+
+# Timer function
+def start_timer(duration):
+    for remaining in range(duration, 0, -1):
+        socketio.sleep(1)
+        emit('timer', {'time_left': remaining}, broadcast=True)
+    emit('end', {}, broadcast=True)
 
 
 @app.after_request
@@ -294,3 +329,4 @@ def like_post(postnumber):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
+    socketio.run(app, debug=True)
