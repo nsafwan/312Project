@@ -2,6 +2,8 @@
 <head>
     <title>CSE312 Project App</title>
     <link rel="stylesheet" type="text/css" href="public/style.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="public/functions.js"></script>
 </head>
 
 <body onload="startup();">
@@ -23,27 +25,27 @@
         <h3>Post a Question:</h3>
         <form action="/submit-post" method="post" enctype="multipart/form-data">
             <label for="title">Title:
-                <input type="text" id="title" name="title" required>
+                <input type="text" id="title" name="title" >
             </label><br>
 
             <label for="description">Description:
-                <textarea id="description" name="description" required></textarea>
+                <textarea id="description" name="description" ></textarea>
             </label><br>
 
             <label for="answer1">Answer 1:
-                <input type="text" id="answer1" name="answer1" required>
+                <input type="text" id="answer1" name="answer1" >
             </label><br>
 
             <label for="answer2">Answer 2:
-                <input type="text" id="answer2" name="answer2" required>
+                <input type="text" id="answer2" name="answer2" >
             </label><br>
 
             <label for="answer3">Answer 3:
-                <input type="text" id="answer3" name="answer3" required>
+                <input type="text" id="answer3" name="answer3" >
             </label><br>
 
             <label for="answer4">Answer 4:
-                <input type="text" id="answer4" name="answer4" required>
+                <input type="text" id="answer4" name="answer4" >
             </label><br>
 
             <label for="correct_answer">Correct Answer (#):
@@ -61,6 +63,6 @@
 
 </div>
 
-<script src="public/functions.js"></script>
+
 </body>
 </html>

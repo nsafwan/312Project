@@ -72,7 +72,7 @@ postnumbers_collection = db["postnumbers"]
 #     })
 app = Flask(__name__)
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, transports=['websocket'])
 clients = {}
 
 @app.route('/')

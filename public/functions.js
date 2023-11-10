@@ -4,6 +4,17 @@ document.getElementById("toPosts").addEventListener("click", function(){
 });
 
 
+
+
+function initWS(){
+    var socket = io.connect('http://' + window.location.host, {transports: ['websocket']});
+    socket.on('connect', function(){
+    console.log('Connected to server');
+});
+}
+
+
+
 //Not completed yet
 function postHTML(postJSON){
     const username = postJSON.username;
@@ -131,5 +142,5 @@ function username(){
 
 function startup(){
     updatePosts();
-    setInterval(updatePosts, 2000);
+    initWS();
 }
