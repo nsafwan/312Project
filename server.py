@@ -79,10 +79,13 @@ clients = {}
 def serve_index():
     return send_from_directory('public', 'index.html')
 
-
 @app.route('/posts')
 def serve_posts():
     return send_from_directory('public', 'posts.html')
+
+@app.route('/grades')
+def serve_grades():
+    return send_from_directory('public', 'grades.html')
 
 
 @app.route('/public/image/<image_name>')
@@ -163,6 +166,41 @@ def submit_question():
     return "Unauthenticated", 401
 
 
+def grade_question(questionID):
+    question = question_collection.find_one({"questionID": questionID})
+    if question and question["grades"] == []:
+        answer = answer_collection.find_one({"questionID": questionID})
+        while answer:
+            # get user info
+            user = user_collection.find_one({"username": answer["username"]})
+            answeredQuestions = user["AnsweredQuestionIDs"]
+            userAnswers = user["answers"]
+            userGrades = user["grades"]
+            questionGrades = question["grades"]
+
+            # update user and question info
+            if answer["answer"] == question["correctAnswer"]:
+                grade = 1
+            else:
+                grade = 0
+            answeredQuestions.append(questionID)
+            userAnswers.append(answer["answer"])
+            userGrades.append(grade)
+            questionGrades.append({user["username"]: grade})
+
+            # set updated info in database
+            user_collection.update_one({"username": user["username"]},
+                                       {"$set": {"AnsweredQuestionIDs": answeredQuestions}})
+            user_collection.update_one({"username": user["username"]}, {"$set": {"answers": userAnswers}})
+            user_collection.update_one({"username": user["username"]}, {"$set": {"grades": userGrades}})
+            question_collection.update_one({"questionID": questionID}, {"$set": {"grades": questionGrades}})
+
+            # remove user's answer from database, and get new answer to grade
+            answer_collection.delete_one({"username": answer["username"]})
+            answer = answer_collection.find_one({"questionID": questionID})
+    else:
+        print("Invalid Question ID")
+
 # Old code from Part 2
 # @app.route("/submit-post", methods=["POST"])
 # def submit_post():
@@ -219,7 +257,7 @@ def register():
         print("Username Taken")
         return redirect(url_for('serve_index'))
     else:
-        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "liked": []})
+        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "AnsweredQuestionIDs": [], "answers": [], "grades":[]})
         print("New User Registered")
         return redirect(url_for('serve_index'))
 
@@ -295,36 +333,36 @@ def apply_nosniff(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
 
-@app.route("/like/<int:postnumber>", methods=["POST"])
-def like_post(postnumber):
-    # Check user authentication
-    auth_token_name = "auth_token"
-    if auth_token_name in request.cookies:
-        request_auth_token = request.cookies.get(auth_token_name)
-        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
-        user = user_collection.find_one({"auth": hashed_request_auth_token})
-        if user:
-            username = user["username"]
-            post = post_collection.find_one({"postnumber": postnumber})
-            if post:
-                liked_post = user.get("liked", [])
-                if postnumber in liked_post:
-                    # User has already liked the post, so unlike it
-                    liked_post.remove(postnumber)
-                    # Updates with the postnumber of the unliked post
-                    user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
-                    post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": -1}})
-                    return "unliked", 200
-                else:
-                    # Like the post
-                    liked_post.append(postnumber)
-                    # Updates with the postnumber of the liked post
-                    user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
-                    post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": 1}})
-                    return "liked", 200
-                
-    # User not authenticated or post not found
-    return "Unauthenticated or Post Not Found", 401
+# @app.route("/like/<int:postnumber>", methods=["POST"])
+# def like_post(postnumber):
+#     # Check user authentication
+#     auth_token_name = "auth_token"
+#     if auth_token_name in request.cookies:
+#         request_auth_token = request.cookies.get(auth_token_name)
+#         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
+#         user = user_collection.find_one({"auth": hashed_request_auth_token})
+#         if user:
+#             username = user["username"]
+#             post = post_collection.find_one({"postnumber": postnumber})
+#             if post:
+#                 liked_post = user.get("liked", [])
+#                 if postnumber in liked_post:
+#                     # User has already liked the post, so unlike it
+#                     liked_post.remove(postnumber)
+#                     # Updates with the postnumber of the unliked post
+#                     user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
+#                     post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": -1}})
+#                     return "unliked", 200
+#                 else:
+#                     # Like the post
+#                     liked_post.append(postnumber)
+#                     # Updates with the postnumber of the liked post
+#                     user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
+#                     post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": 1}})
+#                     return "liked", 200
+#
+#     # User not authenticated or post not found
+#     return "Unauthenticated or Post Not Found", 401
 
 
 if __name__ == '__main__':
