@@ -37,6 +37,7 @@ postnumbers_collection = db["postnumbers"]
 #     "grades": [],
 #     "questionID": 1
 #     "timerUp" : False     This is used to know whether a question has ended or not.
+#     "timer" : 120         120 seconds in the beginning, used to store the time remaining for each question.
 #     })
 
 # answer_collection.insert_one(
