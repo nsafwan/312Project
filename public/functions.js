@@ -140,6 +140,19 @@ function username(){
     request.send();
 }
 
+function grades(){
+    const request = new XMLHttpRequest();
+    request.open("GET", "/grades-display");
+    request.onreadystatechange = function() {
+        if (this.readyState === 4 && this.status === 200) {
+            const res = JSON.parse(this.response);
+            var gradesDiv = document.getElementById("grades");
+            gradesDiv.innerHTML = res;
+        }
+    }
+    request.send();
+}
+
 function startup(){
     updatePosts();
     initWS();

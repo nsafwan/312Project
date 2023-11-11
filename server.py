@@ -296,6 +296,22 @@ def serve_user():
     return send_message
 
 
+@app.route("/grades-display", methods=["GET"])
+def serve_userGrades():
+    auth_token_name = "auth_token"
+    send_message = "None"
+    if auth_token_name in request.cookies:
+        request_auth_token = request.cookies.get(auth_token_name)
+        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_request_auth_token})
+        if user and user["grades"]!=[]:
+            send_message = "" # remove "None"
+            for x in range(len(user["grades"])):
+                send_message += "Question #" + str(user["AnsweredQuestionIDs"][x]) + " | Grade: " + str(user["grades"][x]) + "\n"
+
+    send_message = json.dumps(send_message).encode()
+    return send_message
+
 # Handles connections
 @socketio.on('connect')
 def connect():
