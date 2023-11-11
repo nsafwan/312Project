@@ -5,9 +5,13 @@ import bcrypt
 from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
+import threading
+import time
 
-mongo_client = MongoClient("localhost")  # This should be changed to mongo for dockerZZ
+mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
+
+
 
 """
 Collection of all the users
@@ -16,26 +20,6 @@ shpassword is the salted hashed password of the user.
 auth is the hased auth token of the user.
 liked is an array of all the postnumber that the user has liked (starts off with an empty array).
 """
-# user_collection = db["users"]
-
-"""
-Collection of all the posts.
-Format: (username, title, description, likes, postnumber)
-You can assume each post has a unique postnumber.
-Likes attribute stores the total number of likes this post has.
-"""
-# post_collection = db["posts"]
-
-"""
-Only ever has a single value called unique_postnumber
-"""
-
-# post_collection.insert_one(
-#     {"username": "Test User", "title": "Test Title", "description": "Test description", "likes": 0, "postnumber": 1})
-# user_collection.insert_one(
-#     {"username": "Test User", "shpassword": "Test salted hashed password", "auth": "Test salted auth", "liked": [1]})
-
-
 user_collection = db["users"]
 question_collection = db["questions"]
 answer_collection = db["answers"]
@@ -52,6 +36,8 @@ postnumbers_collection = db["postnumbers"]
 #     "correctAnswer": 0,
 #     "grades": [],
 #     "questionID": 1
+#     "timerUp" : False     This is used to know whether a question has ended or not.
+#     "timer" : 120         120 seconds in the beginning, used to store the time remaining for each question.
 #     })
 
 # answer_collection.insert_one(
@@ -71,9 +57,9 @@ postnumbers_collection = db["postnumbers"]
 #     "grades": [1, 1, 0]
 #     })
 app = Flask(__name__)
-
 socketio = SocketIO(app, transports=['websocket'])
-clients = {}
+
+client_auths = {}  #Used for storing a client auths for websocket.
 
 @app.route('/')
 def serve_index():
@@ -90,6 +76,7 @@ def serve_grades():
 
 @app.route('/public/image/<image_name>')
 def serve_image(image_name):
+    image_name = image_name.replace("/", "")
     return send_from_directory('public/image', image_name)
 
 
@@ -99,7 +86,7 @@ def serve_file(resource):
 
 @app.route("/post-history")
 def give_history():
-    all_posts = list(question_collection.find({}))
+    all_posts = list(question_collection.find({"timerUp": False}))
     for eachpost in all_posts:
         #deleting the extraneous _id attribute.
         del eachpost['_id']
@@ -134,8 +121,7 @@ def submit_question():
     if "image" in request.files:
         image = request.files["image"]
         if image:
-            image_name_from_user = image.filename.replace("/", "")
-            image_name = "postnumber_" + str(postnumber) + "_image_" + image_name_from_user
+            image_name = "postnumber_" + str(postnumber) + "_image" + ".jpg"
 
     # Check to see if user is authenticated
     # search for auth token cookie
@@ -155,15 +141,37 @@ def submit_question():
                     "answers": [answer1, answer2, answer3, answer4],
                     "correctAnswer": correct_answer,
                     "grades": [],
-                    "questionID": postnumber
+                    "questionID": postnumber,
+                    "timerUp": False,
+                    "timer": 120
                 })
             # save image in directory: public/image
             if image:
                 image.save("public/image/" + image_name)
+
+            thread = threading.Thread(target=timer_thread, args=(postnumber,))
+            thread.start()
+
             return redirect(url_for('serve_posts'))
 
     # User not authenticated. Post not submitted. Status code 401
     return "Unauthenticated", 401
+
+def timer_thread(questionID):
+    question = question_collection.find_one({"questionID": questionID})
+    timer = question["timer"]
+    while timer>0:
+        timer = timer -1
+        question_collection.update_one({"questionID": questionID}, {"$set": {"timer": timer}})
+        timer_element = "timer_"+ str(questionID)
+        data = [timer_element, timer]
+        time.sleep(1)
+        socketio.emit('timer_update', data)
+
+    if timer == 0:
+        delete_div(questionID)
+
+
 
 
 def grade_question(questionID):
@@ -200,50 +208,6 @@ def grade_question(questionID):
             answer = answer_collection.find_one({"questionID": questionID})
     else:
         print("Invalid Question ID")
-
-# Old code from Part 2
-# @app.route("/submit-post", methods=["POST"])
-# def submit_post():
-#     # get title and description of post
-#     post_data = request.data.decode()
-#     post_data = json.loads(post_data)
-#     title = post_data["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-#     description = post_data["description"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-#     # print(post_data)
-#
-#     postnumbers_list = list(postnumbers_collection.find({}))
-#     if not postnumbers_list:
-#         #if this is the first entry:
-#         postnumbers_collection.insert_one({"unique_postnumber": 2})
-#         postnumber = 1
-#     else:
-#         #getting unique_postnumber in db-> deleting all entries-> inserting the prevous unique_postnumber +1
-#         postnumber = postnumbers_list[0].get("unique_postnumber")
-#         postnumbers_collection.delete_many({})
-#         postnumbers_collection.insert_one({"unique_postnumber": postnumber + 1})
-#
-#     # Check to see if user is authenticated
-#     # search for auth token cookie
-#     auth_token_cookie_name = "auth_token"
-#     if auth_token_cookie_name in request.cookies:
-#         request_auth_token = request.cookies.get(auth_token_cookie_name)
-#         # hashed_request_auth_token needs to be calculated
-#         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
-#         user = user_collection.find_one({"auth": hashed_request_auth_token})
-#         if user:
-#             username = user["username"]
-#             post_collection.insert_one({
-#                 "username": username,
-#                 "title": title,
-#                 "description": description,
-#                 "likes": 0,
-#                 "postnumber": postnumber
-#             })
-#             return "Successfully posted"
-#
-#     # User not authenticated. Post not submitted. Status code 401
-#     return "Unauthenticated", 401
-
 
 
 @app.route("/register", methods=["POST"])
@@ -315,70 +279,61 @@ def serve_userGrades():
 # Handles connections
 @socketio.on('connect')
 def connect():
-    print("Client connected")
+    #getting auth during websocket handshake.
+    client_id = request.sid #This is a unique identifier for a client.
+    auth = request.cookies.get("auth_token")
+    if auth:
+        hashed_request_auth_token = sha256(auth.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_request_auth_token})
+        if user:
+            client_auths[client_id] = auth
+
+
 
 # Handles disconnections
 @socketio.on('disconnect')
 def disconnect():
-    print("Client disconnected")
+    client_id = request.sid
+    if client_id in client_auths:
+        del client_auths[client_id]
 
-# Process submitted answers by the user
 @socketio.on('submit_answer')
 def submit_answer(data):
-    username = data['username']
-    answer = data['answer']
-    
-    # Logic to verify the answer. Check if the user has already answered and if the time limit has not expired
-    print(f"User {username} answered: {answer}")
+    print(data)
+    client_id = request.sid
+    if client_id in client_auths:
+        this_question = question_collection.find_one({"questionID": data["questionID"]})
+        auth = client_auths[client_id]
+        hashed_request_auth_token = sha256(auth.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_request_auth_token})
+        username = user["username"]
+        if this_question['username'] == username:
+            print("Creator cannot answer their own question")
+        else:
+            already_answer = answer_collection.find_one({"username": username, "questionID": data["questionID"]})
+            if already_answer:
+                print("Already Answered")
+            else:
+                answer_collection.insert_one(
+                    {"username": username,
+                    "questionID": data["questionID"],
+                    "answer": int(data["answer"])})
+    else:
+        print("client not authorized")
 
-# Broadcast question details and start the countdown
-@socketio.on('start_question')
-def start_question(data):
-    emit('question', json.dumps(data), broadcast=True)
 
-# Timer function
-def start_timer(duration):
-    for remaining in range(duration, 0, -1):
-        socketio.sleep(1)
-        emit('timer', {'time_left': remaining}, broadcast=True)
-    emit('end', {}, broadcast=True)
+
+def delete_div(questionID):
+    question_collection.update_one({'questionID': questionID}, {'$set': {"timerUp": True}})
+    div_id = "div_" + str(questionID)
+    data = {"div_id": div_id}
+    socketio.emit('div_deleted', data)
 
 
 @app.after_request
 def apply_nosniff(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
-
-# @app.route("/like/<int:postnumber>", methods=["POST"])
-# def like_post(postnumber):
-#     # Check user authentication
-#     auth_token_name = "auth_token"
-#     if auth_token_name in request.cookies:
-#         request_auth_token = request.cookies.get(auth_token_name)
-#         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
-#         user = user_collection.find_one({"auth": hashed_request_auth_token})
-#         if user:
-#             username = user["username"]
-#             post = post_collection.find_one({"postnumber": postnumber})
-#             if post:
-#                 liked_post = user.get("liked", [])
-#                 if postnumber in liked_post:
-#                     # User has already liked the post, so unlike it
-#                     liked_post.remove(postnumber)
-#                     # Updates with the postnumber of the unliked post
-#                     user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
-#                     post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": -1}})
-#                     return "unliked", 200
-#                 else:
-#                     # Like the post
-#                     liked_post.append(postnumber)
-#                     # Updates with the postnumber of the liked post
-#                     user_collection.update_one({"auth": hashed_request_auth_token}, {"$set": {"liked": liked_post}})
-#                     post_collection.update_one({"postnumber": postnumber}, {"$inc": {"likes": 1}})
-#                     return "liked", 200
-#
-#     # User not authenticated or post not found
-#     return "Unauthenticated or Post Not Found", 401
 
 
 if __name__ == '__main__':
