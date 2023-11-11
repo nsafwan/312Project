@@ -2,14 +2,14 @@
 <head>
     <title>CSE312 Project App</title>
     <link rel="stylesheet" type="text/css" href="public/style.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
     <script src="public/functions.js"></script>
 </head>
 
 <body onload="startup();">
 
     <div class="title">
-        <h1>Posts Page</h1>
+        <h1>Available Questions</h1>
     </div>
 
     <form action="/grades">
@@ -18,7 +18,7 @@
 
     <div class="posts">
         <div id = "all_posts">
-    </div>
+        </div>
 
     <div class="post-form">
 
@@ -61,7 +61,7 @@
 
     </div>
 
-</div>
+    </div>
 
 
 </body>
