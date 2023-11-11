@@ -14,6 +14,11 @@ function initWS(){
     deletionDiv.remove();
 });
 
+    socket.on("timer_update", function(data){
+       var timer = document.getElementById(data[0]);
+       timer.textContent = data[1];
+    });
+
 }
 
 function postHTML(postJSON){
@@ -28,6 +33,7 @@ function postHTML(postJSON){
     let thisPostHTML = "";
 
     thisPostHTML += "<div id= 'div_" +postnumber+"'>";
+    thisPostHTML += "<p>Timer(seconds): <span id='timer_" + postnumber+"'>120</span></p><br>"
     // image
     if (image) {
         thisPostHTML += "<img src=public/image/" + image + "><br>";

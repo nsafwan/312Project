@@ -5,8 +5,10 @@ import bcrypt
 from uuid import uuid4  # used to generate auth token
 from hashlib import sha256
 import json
+import threading
+import time
 
-mongo_client = MongoClient("localhost")  # This should be changed to mongo for dockerZZ
+mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 
@@ -139,15 +141,36 @@ def submit_question():
                     "correctAnswer": correct_answer,
                     "grades": [],
                     "questionID": postnumber,
-                    "timerUp": False
+                    "timerUp": False,
+                    "timer": 120
                 })
             # save image in directory: public/image
             if image:
                 image.save("public/image/" + image_name)
+
+            thread = threading.Thread(target=timer_thread, args=(postnumber,))
+            thread.start()
+
             return redirect(url_for('serve_posts'))
 
     # User not authenticated. Post not submitted. Status code 401
     return "Unauthenticated", 401
+
+def timer_thread(questionID):
+    question = question_collection.find_one({"questionID": questionID})
+    timer = question["timer"]
+    while timer>0:
+        timer = timer -1
+        question_collection.update_one({"questionID": questionID}, {"$set": {"timer": timer}})
+        timer_element = "timer_"+ str(questionID)
+        data = [timer_element, timer]
+        time.sleep(1)
+        socketio.emit('timer_update', data)
+
+    if timer == 0:
+        delete_div(questionID)
+
+
 
 
 def grade_question(questionID):
@@ -257,20 +280,6 @@ def disconnect():
     if client_id in client_auths:
         del client_auths[client_id]
 
-# question_collection.insert_one(
-#     {
-#     "username": "Asker's Username",
-#     "title": "Question Title",
-#     "description": "Question Content",
-#     "image": "name of associated image",
-#     "answers": ["Red", "53", "Left", "1040"],
-#     "correctAnswer": 0,
-#     "grades": [],
-#     "questionID": 1
-#     "timerUp" : False     This is used to know whether a question has ended or not.
-#     })
-
-# Stores the first answer by an authorized user for a question.
 @socketio.on('submit_answer')
 def submit_answer(data):
     print(data)
@@ -295,24 +304,13 @@ def submit_answer(data):
     else:
         print("client not authorized")
 
-@socketio.on('delete_div')
-def delete_div(data):
-    questionID = data['div_id'].split('_')
-    questionID = int(questionID[1])
+
+
+def delete_div(questionID):
     question_collection.update_one({'questionID': questionID}, {'$set': {"timerUp": True}})
-    emit('div_deleted', data, broadcast=True)
-
-# Broadcast question details and start the countdown
-@socketio.on('start_question')
-def start_question(data):
-    emit('question', json.dumps(data), broadcast=True)
-
-# Timer function
-def start_timer(duration):
-    for remaining in range(duration, 0, -1):
-        socketio.sleep(1)
-        emit('timer', {'time_left': remaining}, broadcast=True)
-    emit('end', {}, broadcast=True)
+    div_id = "div_" + str(questionID)
+    data = {"div_id": div_id}
+    socketio.emit('div_deleted', data)
 
 
 @app.after_request
