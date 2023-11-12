@@ -8,10 +8,8 @@ import json
 import threading
 import time
 #mongo_client = MongoClient("mongo")
-mongo_client = MongoClient("localhost")  # This should be changed to mongo for dockerZZ
+mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
-
-
 
 """
 Collection of all the users
