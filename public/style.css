@@ -45,9 +45,6 @@ img {
 }
 .userclass{
     font-size: 20px;
-}
-
-.userclass{
-    font-size: 20px;
+    white-space:pre-wrap;
 }
 

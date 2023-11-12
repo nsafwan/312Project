@@ -127,17 +127,36 @@ function username(){
     request.send();
 }
 
-function grades(){
+function userGrades(){
     const request = new XMLHttpRequest();
-    request.open("GET", "/grades-display");
+    request.open("GET", "/userGrades-display");
     request.onreadystatechange = function() {
         if (this.readyState === 4 && this.status === 200) {
             const res = JSON.parse(this.response);
-            var gradesDiv = document.getElementById("grades");
-            gradesDiv.innerHTML = res;
+            var userGradesDiv = document.getElementById("userGrades");
+            userGradesDiv.innerHTML = res;
         }
     }
     request.send();
+}
+
+function questionGrades(){
+    const request = new XMLHttpRequest();
+    request.open("GET", "/questionGrades-display");
+    request.onreadystatechange = function() {
+        if (this.readyState === 4 && this.status === 200) {
+            const res = JSON.parse(this.response);
+            var questionGradesDiv = document.getElementById("questionGrades");
+            questionGradesDiv.innerHTML = res;
+        }
+    }
+    request.send();
+}
+
+function grades(){
+    userGrades();
+    questionGrades();
+    username();
 }
 
 function startup(){

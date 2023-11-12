@@ -7,8 +7,8 @@ from hashlib import sha256
 import json
 import threading
 import time
-
-mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
+#mongo_client = MongoClient("mongo")
+mongo_client = MongoClient("localhost")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
 
 
@@ -54,7 +54,8 @@ postnumbers_collection = db["postnumbers"]
 #     "auth": "Test salted auth",
 #     "AnsweredQuestionsIDs": [1, 34, 325],
 #     "answers": [3, 0, 1],
-#     "grades": [1, 1, 0]
+#     "grades": [1, 1, 0],
+#     "askedQuestions"
 #     })
 app = Flask(__name__)
 socketio = SocketIO(app, transports=['websocket'])
@@ -132,6 +133,13 @@ def submit_question():
         user = user_collection.find_one({"auth": hashed_request_auth_token})
         if user:
             username = user["username"]
+
+            # added for objective 3
+            askedQuestions = user["askedQuestions"]
+            askedQuestions.append(postnumber)
+            user_collection.update_one({"username": user["username"]},
+                                       {"$set": {"askedQuestions": askedQuestions}})
+
             question_collection.insert_one(
                 {
                     "username": username,
@@ -169,6 +177,7 @@ def timer_thread(questionID):
         socketio.emit('timer_update', data)
 
     if timer == 0:
+        grade_question(questionID)
         delete_div(questionID)
 
 
@@ -188,7 +197,7 @@ def grade_question(questionID):
 
             # update user and question info
             if answer["answer"] == question["correctAnswer"]:
-                grade = 1
+                grade = 100
             else:
                 grade = 0
             answeredQuestions.append(questionID)
@@ -221,7 +230,7 @@ def register():
         print("Username Taken")
         return redirect(url_for('serve_index'))
     else:
-        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "AnsweredQuestionIDs": [], "answers": [], "grades":[]})
+        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "AnsweredQuestionIDs": [], "answers": [], "grades": [], "askedQuestions": []})
         print("New User Registered")
         return redirect(url_for('serve_index'))
 
@@ -260,7 +269,7 @@ def serve_user():
     return send_message
 
 
-@app.route("/grades-display", methods=["GET"])
+@app.route("/userGrades-display", methods=["GET"])
 def serve_userGrades():
     auth_token_name = "auth_token"
     send_message = "None"
@@ -268,10 +277,31 @@ def serve_userGrades():
         request_auth_token = request.cookies.get(auth_token_name)
         hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
         user = user_collection.find_one({"auth": hashed_request_auth_token})
-        if user and user["grades"]!=[]:
+        if user and user["grades"] != []:
             send_message = "" # remove "None"
             for x in range(len(user["grades"])):
-                send_message += "Question #" + str(user["AnsweredQuestionIDs"][x]) + " | Grade: " + str(user["grades"][x]) + "\n"
+                question = question_collection.find_one({"questionID": user["AnsweredQuestionIDs"][x]})
+                send_message += "Question: " + str(question["title"]) + "\nGrade: " + str(user["grades"][x]) + "\n\n"
+
+    send_message = json.dumps(send_message).encode()
+    return send_message
+
+@app.route("/questionGrades-display", methods=["GET"])
+def serve_questionGrades():
+    auth_token_name = "auth_token"
+    send_message = "None"
+    if auth_token_name in request.cookies:
+        request_auth_token = request.cookies.get(auth_token_name)
+        hashed_request_auth_token = sha256(request_auth_token.encode()).hexdigest()
+        user = user_collection.find_one({"auth": hashed_request_auth_token})
+        if user and user["askedQuestions"] != []:
+            send_message = ""   # remove "None"
+            for x in range(len(user["askedQuestions"])):
+                question = question_collection.find_one({"questionID": user["askedQuestions"][x]})
+                send_message += "Question: " + str(question["title"]) + " \nGrades:\n"
+                for y in question["grades"]:
+                    send_message += str(y).replace("{", "").replace("}", "") + " \n"
+                send_message += "\n"
 
     send_message = json.dumps(send_message).encode()
     return send_message
@@ -317,7 +347,7 @@ def submit_answer(data):
                 answer_collection.insert_one(
                     {"username": username,
                     "questionID": data["questionID"],
-                    "answer": int(data["answer"])})
+                    "answer": int(data["answer"])-1})   # -1 b/c the front end uses answers 1-4 but the backend uses answers 0-3
     else:
         print("client not authorized")
 
