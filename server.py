@@ -81,6 +81,7 @@ def serve_image(image_name):
 
 @app.route('/public/<path:resource>')
 def serve_file(resource):
+    resource = resource.replace("/", "")
     return send_from_directory('public', resource)
 
 @app.route("/post-history")
