@@ -211,7 +211,7 @@ def grade_question(questionID):
             question_collection.update_one({"questionID": questionID}, {"$set": {"grades": questionGrades}})
 
             # remove user's answer from database, and get new answer to grade
-            answer_collection.delete_one({"username": answer["username"]})
+            answer_collection.delete_one(answer)
             answer = answer_collection.find_one({"questionID": questionID})
     else:
         print("Invalid Question ID")
