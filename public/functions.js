@@ -7,7 +7,7 @@ var socket;
 
 //initilizes ws on post page startup
 function initWS(){
-    socket = io.connect('wss://' + window.location.host, {transports: ['websocket']});
+    socket = io.connect('wss://cseproject.me' , {transports: ['websocket']});
 
     socket.on("div_deleted", function(data) {
     var deletionDiv = document.getElementById(data['div_id']);
