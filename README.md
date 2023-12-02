@@ -1,1 +1,1 @@
-Domain: www.cseproject.me
+Domain: cseproject.me
