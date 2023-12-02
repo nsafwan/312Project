@@ -366,5 +366,6 @@ def apply_nosniff(response):
 
 
 if __name__ == '__main__':
+    ssl_context = ('/etc/letsencrypt/live/cseproject.me/fullchain.pem', '/etc/letsencrypt/live/example.com/privkey.pem')
     app.run(host='0.0.0.0', port=8080)
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, ssl_context=ssl_context)
