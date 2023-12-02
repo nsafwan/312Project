@@ -7,6 +7,11 @@ from hashlib import sha256
 import json
 import threading
 import time
+import os
+import smtplib
+from email.mime.text import MIMEText
+from itsdangerous import URLSafeTimedSerializer
+
 #mongo_client = MongoClient("mongo")
 mongo_client = MongoClient("mongo")  # This should be changed to mongo for dockerZZ
 db = mongo_client["cse312"]  # Creating a mongo database called cse312
@@ -257,16 +262,26 @@ def grade_question(questionID):
 @app.route("/register", methods=["POST"])
 def register():
     data = request.form
-    # assuming same form input names as hw2 html (username_reg and password_reg)
-    username = data["username_reg"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") #escaped when entered to db
+    username = data["username_reg"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    email = data["email_reg"]  # Assuming the form has an 'email_reg' field
     shpassword = bcrypt.hashpw(data["password_reg"].encode(), bcrypt.gensalt())
+
     existing_user = user_collection.find_one({"username": username})
     if existing_user:
         print("Username Taken")
         return redirect(url_for('serve_index'))
     else:
-        user_collection.insert_one({"username": username, "shpassword": shpassword, "auth": "", "AnsweredQuestionIDs": [], "answers": [], "grades": [], "askedQuestions": []})
+        # Insert the new user with email and set email_verified to False
+        user_collection.insert_one({"username": username, "email": email, "email_verified": False, "shpassword": shpassword, "auth": "", "AnsweredQuestionIDs": [], "answers": [], "grades": [], "askedQuestions": []})
         print("New User Registered")
+
+        # Generate email verification token
+        token = generate_confirmation_token(email)
+        confirm_url = url_for('confirm_email', token=token, _external=True)
+
+        # Send email verification
+        send_email(email, "Confirm Your Email", f"Please click this link to confirm your email: {confirm_url}")
+
         return redirect(url_for('serve_index'))
 
 @app.route("/login", methods=["POST"])
@@ -341,6 +356,23 @@ def serve_questionGrades():
     send_message = json.dumps(send_message).encode()
     return send_message
 
+# Email confirmation endpoint
+@app.route('/confirm/<token>')
+def confirm_email(token):
+    try:
+        email = URLSafeTimedSerializer(os.environ.get("SECRET_KEY")).loads(
+            token, salt=os.environ.get("SECURITY_PASSWORD_SALT"), max_age=3600)
+    except:
+        return "The confirmation link is invalid or has expired."
+
+    user = user_collection.find_one({"email": email})
+    if user and not user['email_verified']:
+        user_collection.update_one({"email": email}, {"$set": {"email_verified": True}})
+        return "Email confirmation successful"
+    else:
+        return "Email already verified or user not found."
+
+
 # Handles connections
 @socketio.on('connect')
 def connect():
@@ -399,6 +431,24 @@ def delete_div(questionID):
 def apply_nosniff(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
+
+# Generate a new unique token
+def generate_confirmation_token(email):
+    serializer = URLSafeTimedSerializer(os.environ.get("SECRET_KEY"))
+    return serializer.dumps(email, salt=os.environ.get("SECURITY_PASSWORD_SALT"))
+
+# Add email sending functionality
+def send_email(to, subject, body):
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = os.environ['EMAIL_USER']
+    msg['To'] = to
+
+    s = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    s.login(os.environ['EMAIL_USER'], os.environ['EMAIL_PASS'])
+    s.send_message(msg)
+    s.quit()
+
 
 
 if __name__ == '__main__':
