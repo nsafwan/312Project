@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, redirect, url_for, render_template
+from flask import Flask, send_from_directory, request, redirect, url_for, abort
 from flask_socketio import SocketIO, emit
 from pymongo import MongoClient
 import bcrypt
@@ -59,6 +59,42 @@ app = Flask(__name__)
 socketio = SocketIO(app, transports=['websocket'])
 
 client_auths = {}  #Used for storing a client auths for websocket.
+
+requests_per_ip = {} #Used to store a counter for how many times each IP address has accessed the site in 10 sec period.
+blocked_ips = set()   #Set of blocked ips, removed after 30 seconds.
+
+@app.before_request
+def dos_prot():
+    client_ip = request.headers.get('X-Real-IP')
+    if client_ip not in blocked_ips:
+        indict_value = requests_per_ip.get(client_ip)
+        if indict_value:
+            requests_per_ip[client_ip] = requests_per_ip[client_ip] + 1
+            if requests_per_ip[client_ip] >= 50:
+                blocked_ips.add(client_ip)
+                blocking_thread = threading.Thread(target=blocking, args=(client_ip,))
+                blocking_thread.start()
+        else:
+            requests_per_ip[client_ip] = 1
+            timing_thread = threading.Thread(target=block_cd, args=(client_ip,))
+            timing_thread.start()
+
+    else:
+        abort(429, "Too Many Requests in a short time. Try again later.")
+
+
+def blocking(client_ip):
+    time.sleep(30)
+    blocked_ips.remove(client_ip)
+    if client_ip in requests_per_ip:
+        requests_per_ip.pop(client_ip)
+
+
+def block_cd(client_ip):
+    time.sleep(10)
+    if client_ip in requests_per_ip:
+        requests_per_ip.pop(client_ip)
+
 
 @app.route('/')
 def serve_index():
