@@ -121,7 +121,8 @@ function username(){
         if (this.readyState === 4 && this.status === 200) {
             const res = JSON.parse(this.response);
             var usernameDiv = document.getElementById("user");
-            usernameDiv.innerHTML = res;
+            let verificationStatus = res.email_verified ? "Verified" : "Not Verified";
+            usernameDiv.innerHTML = `Username: ${res.username} <br> Email: ${res.email} (${verificationStatus})`;
         }
     }
     request.send();
