@@ -1,1 +1,1 @@
-Domain: cseproject.me
+App: https://cseproject.me
